@@ -1,9 +1,46 @@
+^{:cljs
+  '(ns clout.core
+     "Library for parsing the Rails routes syntax."
+     (:require [goog.string :as gstring]
+               [clojure.string :as string]
+               [goog.Uri :as uri]))}
 (ns clout.core
   "Library for parsing the Rails routes syntax."
   (:require [clojure.string :as string])
-  (:import java.util.Map
-           java.util.regex.Matcher
+  (:import java.util.regex.Matcher
            [java.net URLDecoder URLEncoder]))
+
+
+#_(:cljs
+   (defn re-matcher [re s]
+     (if-let [matcher (.exec re s)]
+       (do
+         (set! (.-matches matcher)
+               (fn [] true))
+         (set! (.-lookingAt matcher)
+               (fn [] true))
+         (set! (.-groupCount matcher)
+               (fn [] (- (.-length matcher) 1)))
+         (set! (.-group matcher)
+               (fn [i] (aget matcher (int i))))
+         (set! (.-end matcher)
+               (fn []
+                 (let [lastMatch (aget matcher (.groupCount matcher))
+                       lastPos   (.lastIndexOf s lastMatch)]
+                   (+ lastPos (.-length lastMatch)))))
+         matcher)
+       (let [matcher (js-obj)]
+         (set! (.-matches matcher)
+               (fn [] false))
+         (set! (.-lookingAt matcher)
+               (fn [] false))
+         (set! (.-groupCount matcher)
+               (fn [] 0))
+         (set! (.-group matcher)
+               (fn [i] (throw (js/Error. "Illegal state exception"))))
+         (set! (.-end matcher)
+               (fn [i] (throw (js/Error. "Illegal state exception"))))
+         matcher))))
 
 ;; Regular expression utilties
 
@@ -31,7 +68,10 @@
   ([path]
      (path-decode path "UTF-8"))
   ([path encoding]
-     (-> (string/replace path "+" (URLEncoder/encode "+" encoding))
+     (-> (string/replace path "+"
+                         ^{:cljs '(gstring/urlEncode "+")}
+                         (URLEncoder/encode "+" encoding))
+         ^{:cljs '(gstring/urlDecode)}
          (URLDecoder/decode encoding))))
 
 (defn- assoc-vec
@@ -145,4 +185,3 @@
   Route
   (route-matches [route request]
     (route-matches (route-compile route) request)))
-
