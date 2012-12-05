@@ -6109,8 +6109,8 @@ cljs.core.fnil = function() {
   }, d = function(a, b, c, d) {
     return function() {
       var i = null, j = function() {
-        var i = function(i, j, l, k) {
-          return cljs.core.apply.call(null, a, null == i ? b : i, null == j ? c : j, null == l ? d : l, k)
+        var i = function(i, j, k, l) {
+          return cljs.core.apply.call(null, a, null == i ? b : i, null == j ? c : j, null == k ? d : k, l)
         }, j = function(a, b, c, d) {
           var e = null;
           goog.isDef(d) && (e = cljs.core.array_seq(Array.prototype.slice.call(arguments, 3), 0));
@@ -14039,45 +14039,45 @@ goog.Uri.QueryData.prototype.extend = function(a) {
 };
 var clout = {core:{}};
 clout.core.re_matcher = function(a, b) {
-  var c = a.exec(b);
-  if(cljs.core.truth_(c)) {
-    var d = c;
-    d.matches = function() {
-      return!0
-    };
-    d.lookingAt = function() {
-      return!0
-    };
-    d.groupCount = function() {
-      return d.length - 1
-    };
-    d.group = function(a) {
-      return d[cljs.core.int$.call(null, a)]
-    };
-    d.end = function() {
-      var a = d[d.groupCount()];
-      return b.lastIndexOf(a) + a.length
+  var c = RegExp(a.source, "g"), d = c.exec(b);
+  return{lookingAt:function() {
+    return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, d.index, 0) : d
+  }, matches:function() {
+    return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, b, d[0]) : d
+  }, start:function() {
+    return cljs.core.truth_(d) ? d.index : d
+  }, end:function() {
+    if(cljs.core.truth_(d)) {
+      return c.lastIndex
     }
-  }else {
-    d = {matches:function() {
-      return!1
-    }, lookingAt:function() {
-      return!1
-    }, groupCount:function() {
-      return 0
-    }, group:function() {
-      throw Error("Illegal state exception");
-    }, end:function() {
-      throw Error("Illegal state exception");
-    }}
-  }
-  return d
+    throw Error("invalid state");
+  }, groupCount:function() {
+    var a;
+    a = cljs.core.truth_(d) ? d.length : d;
+    return cljs.core.truth_(a) ? a : 0
+  }, group:function() {
+    var a = function(a) {
+      a = cljs.core.nth.call(null, a, 0, null);
+      return cljs.core.truth_(d) ? (a = cljs.core.truth_(a) ? a : 0, d[a]) : d
+    }, b = function(b) {
+      var c = null;
+      goog.isDef(b) && (c = cljs.core.array_seq(Array.prototype.slice.call(arguments, 0), 0));
+      return a.call(this, c)
+    };
+    b.cljs$lang$maxFixedArity = 0;
+    b.cljs$lang$applyTo = function(b) {
+      b = cljs.core.seq(b);
+      return a(b)
+    };
+    b.cljs$lang$arity$variadic = a;
+    return b
+  }()}
 };
 clout.core.re_chars = cljs.core.set.call(null, "\\.*+|?()[]{}$^");
 clout.core.re_escape = function(a) {
-  return clojure.string.escape.call(null, a, function(a) {
-    return cljs.core.truth_(clout.core.re_chars.call(null, a)) ? [cljs.core.str("\\"), cljs.core.str(a)].join("") : null
-  })
+  return clojure.string.escape.call(null, a, cljs.core.reduce.call(null, function(a, c) {
+    return cljs.core.assoc.call(null, a, c, [cljs.core.str("\\"), cljs.core.str(c)].join(""))
+  }, cljs.core.ObjMap.EMPTY, clout.core.re_chars))
 };
 clout.core.re_groups_STAR_ = function(a) {
   return function c(d) {
@@ -14169,7 +14169,7 @@ clout.core.CompiledRoute.prototype.cljs$core$IAssociative$_assoc$arity$3 = funct
 clout.core.CompiledRoute.prototype.clout$core$Route$ = !0;
 clout.core.CompiledRoute.prototype.clout$core$Route$route_matches$arity$2 = function(a, b) {
   var c = cljs.core.truth_(this.absolute_QMARK_) ? clout.core.request_url.call(null, b) : clout.core.path_info.call(null, b), c = clout.core.re_matcher.call(null, this.re, c);
-  return cljs.core.truth_(c.matches()) ? clout.core.assoc_keys_with_groups.call(null, cljs.core.map.call(null, clout.core.path_decode, clout.core.re_groups_STAR_.call(null, c)), this.keys) : null
+  return cljs.core.truth_(c.matches()) ? clout.core.assoc_keys_with_groups.call(null, clout.core.re_groups_STAR_.call(null, c), this.keys) : null
 };
 clout.core.CompiledRoute.prototype.cljs$core$IPrintWithWriter$_pr_writer$arity$3 = function(a, b, c) {
   return cljs.core.pr_sequential_writer.call(null, b, function(a) {
@@ -14252,17 +14252,20 @@ clout.core.lex = function() {
 clout.core.absolute_url_QMARK_ = function(a) {
   return cljs.core.boolean$.call(null, cljs.core.re_matches.call(null, /(https?:)?\/\/.*/, a))
 };
+clout.core._word_regexp = /:([a-zA-Z_][\w\-]*)/;
+clout.core._literal_regexp = /(:[^a-zA-Z_*]|[^:*])+/;
 clout.core.route_compile = function() {
   var a = null, b = function(b) {
     return a.call(null, b, cljs.core.ObjMap.EMPTY)
   }, c = function(a, b) {
-    var c = /\*/, g = /:([\p{L}_][\p{L}_0-9-]*)/, h = /(:[^\p{L}_*]|[^:*])+/, i = function(a) {
+    var c = /\*/, g = clout.core._word_regexp, h = clout.core._literal_regexp, i = function(a) {
       return cljs.core.keyword.call(null, a.group(1))
     }, j = function(a) {
       return b.call(null, i.call(null, a), "[^/,;?]+")
     };
-    return new clout.core.CompiledRoute(cljs.core.re_pattern.call(null, cljs.core.apply.call(null, cljs.core.str, clout.core.lex.call(null, a, c, "(.*?)", /^\/\//, "https?://", g, function(a) {
-      return[cljs.core.str("("), cljs.core.str(j.call(null, a)), cljs.core.str(")")].join("")
+    return new clout.core.CompiledRoute(cljs.core.re_pattern.call(null, cljs.core.apply.call(null, cljs.core.str, clout.core.lex.call(null, a, c, "(.*)", /^\/\//, "https?://", g, function(a) {
+      a = j.call(null, a);
+      return[cljs.core.str("("), cljs.core.str(cljs.core.truth_(cljs.core.regexp_QMARK_.call(null, a)) ? a.source : a), cljs.core.str(")")].join("")
     }, h, function(a) {
       return clout.core.re_escape.call(null, a.group())
     }))), cljs.core.remove.call(null, cljs.core.nil_QMARK_, clout.core.lex.call(null, a, c, "\ufdd0'*", g, i, h, null)), clout.core.absolute_url_QMARK_.call(null, a))

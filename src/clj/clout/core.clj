@@ -10,37 +10,46 @@
   (:import java.util.regex.Matcher
            [java.net URLDecoder URLEncoder]))
 
+;; (defn log [& args]
+;;   ^{:cljs '(.log js/console (apply str args))}
+;;   (apply println args))
 
 #_(:cljs
    (defn re-matcher [re s]
-     (if-let [matcher (.exec re s)]
-       (do
-         (set! (.-matches matcher)
-               (fn [] true))
-         (set! (.-lookingAt matcher)
-               (fn [] true))
-         (set! (.-groupCount matcher)
-               (fn [] (- (.-length matcher) 1)))
-         (set! (.-group matcher)
-               (fn [i] (aget matcher (int i))))
-         (set! (.-end matcher)
-               (fn []
-                 (let [lastMatch (aget matcher (.groupCount matcher))
-                       lastPos   (.lastIndexOf s lastMatch)]
-                   (+ lastPos (.-length lastMatch)))))
-         matcher)
-       (let [matcher (js-obj)]
-         (set! (.-matches matcher)
-               (fn [] false))
-         (set! (.-lookingAt matcher)
-               (fn [] false))
-         (set! (.-groupCount matcher)
-               (fn [] 0))
-         (set! (.-group matcher)
-               (fn [i] (throw (js/Error. "Illegal state exception"))))
-         (set! (.-end matcher)
-               (fn [i] (throw (js/Error. "Illegal state exception"))))
-         matcher))))
+     (let [re (js* "new RegExp(re.source, 'g')")
+           match (.exec re s)]
+       ;; (log "* " re " " s)
+       (js-obj
+        "lookingAt"
+        (fn []
+          (and match
+               (= (.-index match) 0)))
+        "matches"
+        (fn []
+          (and match
+               (= s (aget match 0))))
+        "start"
+        (fn []
+          (and match
+               (.-index match)))
+        "end"
+        (fn []
+          (if match
+            (.-lastIndex re)
+            (throw (js/Error. "invalid state"))))
+        "groupCount"
+        (fn []
+          (or (and match (.-length match))
+              0))
+        "group"
+        (fn [& [i]]
+          (and match
+               (aget match (or i 0))))))))
+
+;; ^:clj
+;; (defn re-matcher [re s]
+;;   (log "* " re " " s)
+;;   (clojure.core/re-matcher re s))
 
 ;; Regular expression utilties
 
@@ -52,14 +61,16 @@
   [s]
   (string/escape
     s
-    #(if (re-chars %) (str \\ %))))
+    (reduce (fn [m c] (assoc m c (str \\ c))) {} re-chars)))
 
 (defn re-groups*
   "More consistant re-groups that always returns a vector of groups, even if
   there is only one group."
   [^Matcher matcher]
   (for [i (range (.groupCount matcher))]
-    (.group matcher (int (inc i)))))
+    (do
+      ;; (log ".group - " (.group matcher (int (inc i))))
+      (.group matcher (int (inc i))))))
 
 ;; Route matching
 
@@ -83,6 +94,7 @@
       (if (vector? cur)
         (conj cur v)
         [cur v])
+
       v)))
 
 (defn- assoc-keys-with-groups
@@ -120,8 +132,10 @@
                       (request-url request)
                       (path-info request))
           matcher   (re-matcher re path-info)]
+      ;; (log ".matches - " (.matches matcher))
       (if (.matches matcher)
         (assoc-keys-with-groups
+          ^{:cljs '(re-groups* matcher)}
           (map path-decode (re-groups* matcher))
           keys)))))
 
@@ -134,8 +148,11 @@
     (fn [[re action]]
       (let [matcher (re-matcher re src)]
         (if (.lookingAt matcher)
-          [(if (fn? action) (action matcher) action)
-           (subs src (.end matcher))])))
+          (do
+            ;; (log ".lookingAt - " (.lookingAt matcher))
+            ;; (log ".end - " (.end matcher))
+            [(if (fn? action) (action matcher) action)
+             (subs src (.end matcher))]))))
     (partition 2 clauses)))
 
 (defn- lex
@@ -156,24 +173,40 @@
   [path]
   (boolean (re-matches #"(https?:)?//.*" path)))
 
+^{:cljs '(def -word-regexp #":([a-zA-Z_][\w\-]*)")}
+(def -word-regexp #":([\p{L}_][\p{L}_0-9-]*)")
+
+^{:cljs '(def -literal-regexp #"(:[^a-zA-Z_*]|[^:*])+")}
+(def -literal-regexp #"(:[^\p{L}_*]|[^:*])+")
+
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
   ([path]
     (route-compile path {}))
   ([path regexs]
     (let [splat   #"\*"
-          word    #":([\p{L}_][\p{L}_0-9-]*)"
-          literal #"(:[^\p{L}_*]|[^:*])+"
-          word-group #(keyword (.group ^Matcher % 1))
+          word    -word-regexp
+          literal -literal-regexp
+          word-group #(do
+                        ;; (log ".group - " (.group ^Matcher % 1))
+                        (keyword (.group ^Matcher % 1)))
           word-regex #(regexs (word-group %) "[^/,;?]+")]
       (CompiledRoute.
         (re-pattern
           (apply str
             (lex path
-              splat   "(.*?)"
+              splat   "(.*)"
               #"^//"  "https?://"
-              word    #(str "(" (word-regex %) ")")
-              literal #(re-escape (.group ^Matcher %)))))
+              word    ^{:cljs
+                        '(fn [w]
+                           (let [w (word-regex w)]
+                             (str "("
+                                  (if (regexp? w) (.-source w) w)
+                                  ")")))}
+                      (fn [w] (str "(" (word-regex w) ")"))
+              literal #(do
+                         ;; (log ".group - " (.group ^Matcher %))
+                         (re-escape (.group ^Matcher %))))))
         (remove nil?
           (lex path
             splat   :*

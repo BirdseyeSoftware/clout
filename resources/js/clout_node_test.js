@@ -6109,8 +6109,8 @@ cljs.core.fnil = function() {
   }, d = function(a, b, c, d) {
     return function() {
       var i = null, j = function() {
-        var i = function(i, j, l, k) {
-          return cljs.core.apply.call(null, a, null == i ? b : i, null == j ? c : j, null == l ? d : l, k)
+        var i = function(i, j, k, l) {
+          return cljs.core.apply.call(null, a, null == i ? b : i, null == j ? c : j, null == k ? d : k, l)
         }, j = function(a, b, c, d) {
           var e = null;
           goog.isDef(d) && (e = cljs.core.array_seq(Array.prototype.slice.call(arguments, 3), 0));
@@ -14039,45 +14039,45 @@ goog.Uri.QueryData.prototype.extend = function(a) {
 };
 var clout = {core:{}};
 clout.core.re_matcher = function(a, b) {
-  var c = a.exec(b);
-  if(cljs.core.truth_(c)) {
-    var d = c;
-    d.matches = function() {
-      return!0
-    };
-    d.lookingAt = function() {
-      return!0
-    };
-    d.groupCount = function() {
-      return d.length - 1
-    };
-    d.group = function(a) {
-      return d[cljs.core.int$.call(null, a)]
-    };
-    d.end = function() {
-      var a = d[d.groupCount()];
-      return b.lastIndexOf(a) + a.length
+  var c = RegExp(a.source, "g"), d = c.exec(b);
+  return{lookingAt:function() {
+    return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, d.index, 0) : d
+  }, matches:function() {
+    return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, b, d[0]) : d
+  }, start:function() {
+    return cljs.core.truth_(d) ? d.index : d
+  }, end:function() {
+    if(cljs.core.truth_(d)) {
+      return c.lastIndex
     }
-  }else {
-    d = {matches:function() {
-      return!1
-    }, lookingAt:function() {
-      return!1
-    }, groupCount:function() {
-      return 0
-    }, group:function() {
-      throw Error("Illegal state exception");
-    }, end:function() {
-      throw Error("Illegal state exception");
-    }}
-  }
-  return d
+    throw Error("invalid state");
+  }, groupCount:function() {
+    var a;
+    a = cljs.core.truth_(d) ? d.length : d;
+    return cljs.core.truth_(a) ? a : 0
+  }, group:function() {
+    var a = function(a) {
+      a = cljs.core.nth.call(null, a, 0, null);
+      return cljs.core.truth_(d) ? (a = cljs.core.truth_(a) ? a : 0, d[a]) : d
+    }, b = function(b) {
+      var c = null;
+      goog.isDef(b) && (c = cljs.core.array_seq(Array.prototype.slice.call(arguments, 0), 0));
+      return a.call(this, c)
+    };
+    b.cljs$lang$maxFixedArity = 0;
+    b.cljs$lang$applyTo = function(b) {
+      b = cljs.core.seq(b);
+      return a(b)
+    };
+    b.cljs$lang$arity$variadic = a;
+    return b
+  }()}
 };
 clout.core.re_chars = cljs.core.set.call(null, "\\.*+|?()[]{}$^");
 clout.core.re_escape = function(a) {
-  return clojure.string.escape.call(null, a, function(a) {
-    return cljs.core.truth_(clout.core.re_chars.call(null, a)) ? [cljs.core.str("\\"), cljs.core.str(a)].join("") : null
-  })
+  return clojure.string.escape.call(null, a, cljs.core.reduce.call(null, function(a, c) {
+    return cljs.core.assoc.call(null, a, c, [cljs.core.str("\\"), cljs.core.str(c)].join(""))
+  }, cljs.core.ObjMap.EMPTY, clout.core.re_chars))
 };
 clout.core.re_groups_STAR_ = function(a) {
   return function c(d) {
@@ -14169,7 +14169,7 @@ clout.core.CompiledRoute.prototype.cljs$core$IAssociative$_assoc$arity$3 = funct
 clout.core.CompiledRoute.prototype.clout$core$Route$ = !0;
 clout.core.CompiledRoute.prototype.clout$core$Route$route_matches$arity$2 = function(a, b) {
   var c = cljs.core.truth_(this.absolute_QMARK_) ? clout.core.request_url.call(null, b) : clout.core.path_info.call(null, b), c = clout.core.re_matcher.call(null, this.re, c);
-  return cljs.core.truth_(c.matches()) ? clout.core.assoc_keys_with_groups.call(null, cljs.core.map.call(null, clout.core.path_decode, clout.core.re_groups_STAR_.call(null, c)), this.keys) : null
+  return cljs.core.truth_(c.matches()) ? clout.core.assoc_keys_with_groups.call(null, clout.core.re_groups_STAR_.call(null, c), this.keys) : null
 };
 clout.core.CompiledRoute.prototype.cljs$core$IPrintWithWriter$_pr_writer$arity$3 = function(a, b, c) {
   return cljs.core.pr_sequential_writer.call(null, b, function(a) {
@@ -14252,17 +14252,20 @@ clout.core.lex = function() {
 clout.core.absolute_url_QMARK_ = function(a) {
   return cljs.core.boolean$.call(null, cljs.core.re_matches.call(null, /(https?:)?\/\/.*/, a))
 };
+clout.core._word_regexp = /:([a-zA-Z_][\w\-]*)/;
+clout.core._literal_regexp = /(:[^a-zA-Z_*]|[^:*])+/;
 clout.core.route_compile = function() {
   var a = null, b = function(b) {
     return a.call(null, b, cljs.core.ObjMap.EMPTY)
   }, c = function(a, b) {
-    var c = /\*/, g = /:([\p{L}_][\p{L}_0-9-]*)/, h = /(:[^\p{L}_*]|[^:*])+/, i = function(a) {
+    var c = /\*/, g = clout.core._word_regexp, h = clout.core._literal_regexp, i = function(a) {
       return cljs.core.keyword.call(null, a.group(1))
     }, j = function(a) {
       return b.call(null, i.call(null, a), "[^/,;?]+")
     };
-    return new clout.core.CompiledRoute(cljs.core.re_pattern.call(null, cljs.core.apply.call(null, cljs.core.str, clout.core.lex.call(null, a, c, "(.*?)", /^\/\//, "https?://", g, function(a) {
-      return[cljs.core.str("("), cljs.core.str(j.call(null, a)), cljs.core.str(")")].join("")
+    return new clout.core.CompiledRoute(cljs.core.re_pattern.call(null, cljs.core.apply.call(null, cljs.core.str, clout.core.lex.call(null, a, c, "(.*)", /^\/\//, "https?://", g, function(a) {
+      a = j.call(null, a);
+      return[cljs.core.str("("), cljs.core.str(cljs.core.truth_(cljs.core.regexp_QMARK_.call(null, a)) ? a.source : a), cljs.core.str(")")].join("")
     }, h, function(a) {
       return clout.core.re_escape.call(null, a.group())
     }))), cljs.core.remove.call(null, cljs.core.nil_QMARK_, clout.core.lex.call(null, a, c, "\ufdd0'*", g, i, h, null)), clout.core.absolute_url_QMARK_.call(null, a))
@@ -14287,7 +14290,8 @@ clout.test = {};
 clout.test.core = {};
 cljs.core.not_EQ_.call(null, "undefined", typeof exports) && (buster = require("buster"));
 clout.test.core.request = function(a, b) {
-  return cljs.core.ObjMap.fromObject(["\ufdd0'uri", "\ufdd0'request-method"], {"\ufdd0'uri":(new goog.Uri(b)).getPath(), "\ufdd0'request-method":a})
+  var c = new goog.Uri(b);
+  return cljs.core.ObjMap.fromObject(["\ufdd0'uri", "\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'request-method"], {"\ufdd0'uri":c.getPath(), "\ufdd0'scheme":c.getScheme(), "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:[cljs.core.str(c.getDomain()), cljs.core.str(cljs.core.truth_(c.hasPort()) ? [cljs.core.str(":"), cljs.core.str(c.getPort())].join("") : null)].join("")}), "\ufdd0'request-method":a})
 };
 buster.spec.describe("fixed path", function() {
   buster.spec.it("", function() {
@@ -14381,34 +14385,65 @@ buster.spec.describe("same keyword many times", function() {
   });
   return null
 });
-buster.spec.describe("non ascii keywords", function() {
-  buster.spec.it("", function() {
-    var a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00e4\u00f1\u00dfO\u00d4", clout.test.core.request.call(null, "\ufdd0'get", "/abc")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00e4\u00f1\u00dfO\u00d4"], {"\ufdd0'\u00e4\u00f1\u00dfO\u00d4":"abc"})), b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00e4\u00f1\u00dfO\u00d4", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/abc")), cljs.core.hash_map("\ufdd0'\u00e4\u00f1\u00dfO\u00d4", "abc"))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00c1\u00e4\u00f1\u00dfO\u00d4", clout.test.core.request.call(null, "\ufdd0'get", "/abc")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00c1\u00e4\u00f1\u00dfO\u00d4"], {"\ufdd0'\u00c1\u00e4\u00f1\u00dfO\u00d4":"abc"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00c1\u00e4\u00f1\u00dfO\u00d4", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/abc")), cljs.core.hash_map("\ufdd0'\u00c1\u00e4\u00f1\u00dfO\u00d4", "abc"))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00e4/:\u0634", clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00e4", "\ufdd0'\u0634"], {"\ufdd0'\u00e4":"foo", "\ufdd0'\u0634":"bar"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00e4/:\u0634", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar")), cljs.core.hash_map("\ufdd0'\u00e4", "foo", "\ufdd0'\u0634", "bar"))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00e4/:\u00e4", clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00e4"], {"\ufdd0'\u00e4":cljs.core.PersistentVector.fromArray(["foo", "bar"], !0)}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00e4/:\u00e4", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar")), cljs.core.hash_map("\ufdd0'\u00e4", cljs.core.vec(["foo", "bar"])))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00c4-\u00fc", clout.test.core.request.call(null, "\ufdd0'get", "/baz")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00c4-\u00fc"], {"\ufdd0'\u00c4-\u00fc":"baz"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00c4-\u00fc", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/baz")), cljs.core.hash_map("\ufdd0'\u00c4-\u00fc", "baz"))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:\u00c4_\u00fc", clout.test.core.request.call(null, "\ufdd0'get", "/baz")), cljs.core.ObjMap.fromObject(["\ufdd0'\u00c4_\u00fc"], {"\ufdd0'\u00c4_\u00fc":"baz"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.list("\ufdd1'=", cljs.core.list("\ufdd1'route-matches", "/:\u00c4_\u00fc", cljs.core.list("\ufdd1'request", "\ufdd0'get", "/baz")), cljs.core.hash_map("\ufdd0'\u00c4_\u00fc", "baz"))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    return null
-  });
-  return null
-});
 buster.spec.describe("utf8 routes", function() {
   buster.spec.it("", function() {
     var a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, "/:x", clout.test.core.request.call(null, "\ufdd0'get", "/gro%C3%9Fp%C3%B6sna")), cljs.core.ObjMap.fromObject(["\ufdd0'x"], {"\ufdd0'x":"gro\u00dfp\u00f6sna"})), b;
     b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'=", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/:x", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/gro%C3%9Fp%C3%B6sna"), cljs.core.hash_map("\ufdd0'line", 15))), cljs.core.hash_map("\ufdd0'line", 15)), cljs.core.hash_map("\ufdd0'x", "gro\u00dfp\u00f6sna")), cljs.core.hash_map("\ufdd0'line", 15))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'=", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/:x", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/gro%C3%9Fp%C3%B6sna"), cljs.core.hash_map("\ufdd0'line", 14))), cljs.core.hash_map("\ufdd0'line", 14)), cljs.core.hash_map("\ufdd0'x", "gro\u00dfp\u00f6sna")), cljs.core.hash_map("\ufdd0'line", 14))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    return null
+  });
+  return null
+});
+buster.spec.describe("compiled routes", function() {
+  buster.spec.it("", function() {
+    var a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, clout.core.route_compile.call(null, "/foo/:id"), clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar")), cljs.core.ObjMap.fromObject(["\ufdd0'id"], {"\ufdd0'id":"bar"})), b;
+    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'=", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", cljs.core.with_meta(cljs.core.list("\ufdd1'route-compile", "/foo/:id"), cljs.core.hash_map("\ufdd0'line", 15)), cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 15))), cljs.core.hash_map("\ufdd0'line", 15)), cljs.core.hash_map("\ufdd0'id", "bar")), 
+    cljs.core.hash_map("\ufdd0'line", 15))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    return null
+  });
+  return null
+});
+buster.spec.describe("url paths", function() {
+  buster.spec.it("", function() {
+    var a = clout.core.route_matches.call(null, "http://localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'http", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"})), b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'http", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 16))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    a = clout.core.route_matches.call(null, "//localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'http", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"}));
+    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "//localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'http", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 16))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    a = clout.core.route_matches.call(null, "//localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'https", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"}));
+    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "//localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'https", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 16))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    return null
+  });
+  return null
+});
+buster.spec.describe("unmatched paths", function() {
+  buster.spec.it("", function() {
+    var a = null == clout.core.route_matches.call(null, "/foo", clout.test.core.request.call(null, "\ufdd0'get", "/bar")), b;
+    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'nil?", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/foo", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/bar"), cljs.core.hash_map("\ufdd0'line", 17))), cljs.core.hash_map("\ufdd0'line", 17))), cljs.core.hash_map("\ufdd0'line", 17))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    return null
+  });
+  return null
+});
+buster.spec.describe("path info matches", function() {
+  buster.spec.it("", function() {
+    var a = clout.core.route_matches.call(null, "/bar", cljs.core.assoc.call(null, clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar"), "\ufdd0'path-info", "/bar")), b;
+    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/bar", cljs.core.with_meta(cljs.core.list("\ufdd1'->", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 18)), cljs.core.with_meta(cljs.core.list("\ufdd1'assoc", "\ufdd0'path-info", "/bar"), cljs.core.hash_map("\ufdd0'line", 18))), cljs.core.hash_map("\ufdd0'line", 18))), cljs.core.hash_map("\ufdd0'line", 
+    18))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
+    return null
+  });
+  return null
+});
+buster.spec.describe("url port paths", function() {
+  buster.spec.it("", function() {
+    var a = clout.test.core.request.call(null, "\ufdd0'get", "http://localhost:8080/"), b = clout.core.route_matches.call(null, "http://localhost:8080/", a), c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost:8080/", "\ufdd1'req"), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
+    b = cljs.core.not.call(null, clout.core.route_matches.call(null, "http://localhost:7070/", a));
+    c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
+    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost:7070/", "\ufdd1'req"), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
     return null
   });
   return null
@@ -14433,70 +14468,16 @@ buster.spec.describe("wildcard paths", function() {
   });
   return null
 });
-buster.spec.describe("compiled routes", function() {
-  buster.spec.it("", function() {
-    var a = cljs.core._EQ_.call(null, clout.core.route_matches.call(null, clout.core.route_compile.call(null, "/foo/:id"), clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar")), cljs.core.ObjMap.fromObject(["\ufdd0'id"], {"\ufdd0'id":"bar"})), b;
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'=", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", cljs.core.with_meta(cljs.core.list("\ufdd1'route-compile", "/foo/:id"), cljs.core.hash_map("\ufdd0'line", 17)), cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 17))), cljs.core.hash_map("\ufdd0'line", 17)), cljs.core.hash_map("\ufdd0'id", "bar")), 
-    cljs.core.hash_map("\ufdd0'line", 17))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    return null
-  });
-  return null
-});
-buster.spec.describe("url paths", function() {
-  buster.spec.it("", function() {
-    var a = clout.core.route_matches.call(null, "http://localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'http", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"})), b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'http", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 18))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = clout.core.route_matches.call(null, "//localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'http", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "//localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'http", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 18))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    a = clout.core.route_matches.call(null, "//localhost/", cljs.core.ObjMap.fromObject(["\ufdd0'scheme", "\ufdd0'headers", "\ufdd0'uri"], {"\ufdd0'scheme":"\ufdd0'https", "\ufdd0'headers":cljs.core.ObjMap.fromObject(["host"], {host:"localhost"}), "\ufdd0'uri":"/"}));
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "//localhost/", cljs.core.hash_map("\ufdd0'scheme", "\ufdd0'https", "\ufdd0'headers", cljs.core.hash_map("host", "localhost"), "\ufdd0'uri", "/")), cljs.core.hash_map("\ufdd0'line", 18))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    return null
-  });
-  return null
-});
-buster.spec.describe("url port paths", function() {
-  buster.spec.it("", function() {
-    var a = clout.test.core.request.call(null, "\ufdd0'get", "http://localhost:8080/"), b = clout.core.route_matches.call(null, "http://localhost:8080/", a), c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost:8080/", "\ufdd1'req"), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
-    b = cljs.core.not.call(null, clout.core.route_matches.call(null, "http://localhost:7070/", a));
-    c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "http://localhost:7070/", "\ufdd1'req"), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.hash_map("\ufdd0'line", 19))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
-    return null
-  });
-  return null
-});
-buster.spec.describe("unmatched paths", function() {
-  buster.spec.it("", function() {
-    var a = null == clout.core.route_matches.call(null, "/foo", clout.test.core.request.call(null, "\ufdd0'get", "/bar")), b;
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'nil?", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/foo", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/bar"), cljs.core.hash_map("\ufdd0'line", 20))), cljs.core.hash_map("\ufdd0'line", 20))), cljs.core.hash_map("\ufdd0'line", 20))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    return null
-  });
-  return null
-});
-buster.spec.describe("path info matches", function() {
-  buster.spec.it("", function() {
-    var a = clout.core.route_matches.call(null, "/bar", cljs.core.assoc.call(null, clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar"), "\ufdd0'path-info", "/bar")), b;
-    b = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(a, [cljs.core.str(b), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "/bar", cljs.core.with_meta(cljs.core.list("\ufdd1'->", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 21)), cljs.core.with_meta(cljs.core.list("\ufdd1'assoc", "\ufdd0'path-info", "/bar"), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 
-    21))), cljs.core.str(", got "), cljs.core.str(a)].join(""));
-    return null
-  });
-  return null
-});
 buster.spec.describe("custom matches", function() {
   buster.spec.it("", function() {
     var a = clout.core.route_compile.call(null, "/foo/:bar", cljs.core.ObjMap.fromObject(["\ufdd0'bar"], {"\ufdd0'bar":/\d+/})), b = cljs.core.not.call(null, clout.core.route_matches.call(null, a, clout.test.core.request.call(null, "\ufdd0'get", "/foo/bar"))), c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
+    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/bar"), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
     b = cljs.core.not.call(null, clout.core.route_matches.call(null, a, clout.test.core.request.call(null, "\ufdd0'get", "/foo/1x")));
     c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/1x"), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
+    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'not", cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/1x"), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
     b = clout.core.route_matches.call(null, a, clout.test.core.request.call(null, "\ufdd0'get", "/foo/10"));
     c = cljs.core.truth_(null) ? [cljs.core.str(null), cljs.core.str(". ")].join("") : null;
-    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/10"), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.hash_map("\ufdd0'line", 22))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
+    buster.assert(b, [cljs.core.str(c), cljs.core.str("Expected "), cljs.core.str(cljs.core.with_meta(cljs.core.list("\ufdd1'route-matches", "\ufdd1'route", cljs.core.with_meta(cljs.core.list("\ufdd1'request", "\ufdd0'get", "/foo/10"), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.hash_map("\ufdd0'line", 21))), cljs.core.str(", got "), cljs.core.str(b)].join(""));
     return null
   });
   return null

@@ -13,8 +13,17 @@
    (initialize-buster)
 
    (defn request [method uri]
-     {:uri (.getPath (goog.Uri. uri))
-      :request-method method}))
+     (let [uri (goog.Uri. uri)]
+       {:uri (.getPath uri)
+        :scheme (.getScheme uri)
+        :headers
+        {"host" (str (.getDomain uri)
+                    (when (.hasPort uri)
+                      (str
+                       ":"
+                       (.getPort uri))))
+         }
+        :request-method method})))
 
 (deftest fixed-path
   (it ""
@@ -22,7 +31,8 @@
          "/"
          "/foo"
          "/foo/bar"
-         "/foo/bar.html")))
+         "/foo/bar.html"
+         )))
 
 (deftest keyword-paths
   (it ""
@@ -30,7 +40,8 @@
            "/:x"       "/foo"     {:x "foo"}
            "/foo/:x"   "/foo/bar" {:x "bar"}
            "/a/b/:c"   "/a/b/c"   {:c "c"}
-           "/:a/b/:c"  "/a/b/c"   {:a "a", :c "c"})))
+           "/:a/b/:c"  "/a/b/c"   {:a "a", :c "c"}
+           )))
 
 (deftest keywords-match-extensions
   (it ""
@@ -63,6 +74,8 @@
          "/:x/:x/:x" "/a/b/c" {:x ["a" "b" "c"]}
          "/:x/b/:x"  "/a/b/c" {:x ["a" "c"]})))
 
+;; clojure supported only
+^:clj
 (deftest non-ascii-keywords
   (it ""
     (are [path uri params] (= (route-matches path (request :get uri)) params)
@@ -77,15 +90,6 @@
   (it ""
     (is (= (route-matches "/:x" (request :get "/gro%C3%9Fp%C3%B6sna"))
            {:x "großpösna"}))))
-
-(deftest wildcard-paths
-  (it ""
-      (are [path uri params] (= (route-matches path (request :get uri)) params)
-           "/*"     "/foo"         {:* "foo"}
-           "/*"     "/foo.txt"     {:* "foo.txt"}
-           "/*"     "/foo/bar"     {:* "foo/bar"}
-           "/foo/*" "/foo/bar/baz" {:* "bar/baz"}
-           "/a/*/d" "/a/b/c/d"     {:* "b/c"})))
 
 (deftest compiled-routes
   (it ""
@@ -111,12 +115,6 @@
           :headers {"host" "localhost"}
           :uri     "/"}))))
 
-(deftest url-port-paths
-  (it ""
-    (let [req (request :get "http://localhost:8080/")]
-      (is (route-matches "http://localhost:8080/" req))
-      (is (not (route-matches "http://localhost:7070/" req))))))
-
 (deftest unmatched-paths
   (it ""
     (is (nil? (route-matches "/foo" (request :get "/bar"))))))
@@ -125,6 +123,21 @@
   (it ""
     (is (route-matches "/bar" (-> (request :get "/foo/bar")
                                   (assoc :path-info "/bar"))))))
+
+(deftest url-port-paths
+  (it ""
+    (let [req (request :get "http://localhost:8080/")]
+      (is (route-matches "http://localhost:8080/" req))
+      (is (not (route-matches "http://localhost:7070/" req))))))
+
+(deftest wildcard-paths
+  (it ""
+      (are [path uri params] (= (route-matches path (request :get uri)) params)
+           "/*"     "/foo"         {:* "foo"}
+           "/*"     "/foo.txt"     {:* "foo.txt"}
+           "/*"     "/foo/bar"     {:* "foo/bar"}
+           "/foo/*" "/foo/bar/baz" {:* "bar/baz"}
+           "/a/*/d" "/a/b/c/d"     {:* "b/c"})))
 
 (deftest custom-matches
   (it ""
