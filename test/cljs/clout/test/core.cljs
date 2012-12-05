@@ -1,6 +1,6 @@
 ;; This file was generated with lein-dalap from
 ;;
-;; test/clj/clout/test/core.clj @ Wed Dec 05 07:56:26 UTC 2012
+;; test/clj/clout/test/core.clj @ Wed Dec 05 18:41:17 UTC 2012
 ;;
 (ns clout.test.core (:require [clout.core :refer [route-matches route-compile]] [goog.Uri :as uri]) (:require-macros [buster-cljs.macros :refer [initialize-buster deftest it is are]]))
 (do (initialize-buster) (defn request [method uri] (let [uri (goog.Uri. uri)] {:uri (.getPath uri), :scheme (.getScheme uri), :headers {"host" (str (.getDomain uri) (when (.hasPort uri) (str ":" (.getPort uri))))}, :request-method method})))

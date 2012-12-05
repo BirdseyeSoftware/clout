@@ -17,34 +17,38 @@
 #_(:cljs
    (defn re-matcher [re s]
      (let [re (js* "new RegExp(re.source, 'g')")
-           match (.exec re s)]
+           match (.exec re s)
+           matcher (js-obj)]
        ;; (log "* " re " " s)
-       (js-obj
-        "lookingAt"
-        (fn []
-          (and match
-               (= (.-index match) 0)))
-        "matches"
-        (fn []
-          (and match
-               (= s (aget match 0))))
-        "start"
-        (fn []
-          (and match
-               (.-index match)))
-        "end"
-        (fn []
-          (if match
-            (.-lastIndex re)
-            (throw (js/Error. "invalid state"))))
-        "groupCount"
-        (fn []
-          (or (and match (.-length match))
-              0))
-        "group"
-        (fn [& [i]]
-          (and match
-               (aget match (or i 0))))))))
+       ;; NOTE: we avoid setting this attributes
+       ;; through js-obj given that it doesn't work
+       ;; on advanced compilation mode
+       (set! (.-lookingAt matcher)
+             (fn []
+               (and match
+                    (= (.-index match) 0))))
+       (set! (.-matches matcher)
+             (fn []
+               (and match
+                    (= s (aget match 0)))))
+       (set! (.-start matcher)
+             (fn []
+               (and match
+                    (.-index match))))
+       (set! (.-end matcher)
+             (fn []
+               (if match
+                 (.-lastIndex re)
+                 (throw (js/Error. "invalid state")))))
+       (set! (.-groupCount matcher)
+             (fn []
+               (or (and match (.-length match))
+                   0)))
+       (set! (.-group matcher)
+             (fn [& [i]]
+               (and match
+                    (aget match (or i 0)))))
+       matcher)))
 
 ;; ^:clj
 ;; (defn re-matcher [re s]

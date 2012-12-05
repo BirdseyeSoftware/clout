@@ -1,9 +1,9 @@
 ;; This file was generated with lein-dalap from
 ;;
-;; src/clj/clout/core.clj @ Wed Dec 05 07:56:51 UTC 2012
+;; src/clj/clout/core.clj @ Wed Dec 05 18:42:58 UTC 2012
 ;;
 (ns clout.core "Library for parsing the Rails routes syntax." (:require [goog.string :as gstring] [clojure.string :as string] [goog.Uri :as uri]))
-(do (defn re-matcher [re s] (let [re (js* "new RegExp(re.source, 'g')") match (.exec re s)] (js-obj "lookingAt" (fn [] (and match (= (.-index match) 0))) "matches" (fn [] (and match (= s (aget match 0)))) "start" (fn [] (and match (.-index match))) "end" (fn [] (if match (.-lastIndex re) (throw (js/Error. "invalid state")))) "groupCount" (fn [] (or (and match (.-length match)) 0)) "group" (fn [& [i]] (and match (aget match (or i 0))))))))
+(do (defn re-matcher [re s] (let [re (js* "new RegExp(re.source, 'g')") match (.exec re s) matcher (js-obj)] (set! (.-lookingAt matcher) (fn [] (and match (= (.-index match) 0)))) (set! (.-matches matcher) (fn [] (and match (= s (aget match 0))))) (set! (.-start matcher) (fn [] (and match (.-index match)))) (set! (.-end matcher) (fn [] (if match (.-lastIndex re) (throw (js/Error. "invalid state"))))) (set! (.-groupCount matcher) (fn [] (or (and match (.-length match)) 0))) (set! (.-group matcher) (fn [& [i]] (and match (aget match (or i 0))))) matcher)))
 (def re-chars (set "\\.*+|?()[]{}$^"))
 (defn- re-escape "Escape all special regex chars in a string." [s] (string/escape s (reduce (fn [m c] (assoc m c (str \\ c))) {} re-chars)))
 (defn re-groups* "More consistant re-groups that always returns a vector of groups, even if\n  there is only one group." [matcher] (for [i (range (.groupCount matcher))] (do (.group matcher (int (inc i))))))
@@ -19,5 +19,5 @@
 (defn- absolute-url? "True if the path contains an absolute or scheme-relative URL." [path] (boolean (re-matches #"(https?:)?//.*" path)))
 (def -word-regexp #":([a-zA-Z_][\w\-]*)")
 (def -literal-regexp #"(:[^a-zA-Z_*]|[^:*])+")
-(defn route-compile "Compile a path string using the routes syntax into a uri-matcher struct." ([path] (route-compile path {})) ([path regexs] (let [splat #"\*" word -word-regexp literal -literal-regexp word-group (fn* [p1__1252#] (do (keyword (.group p1__1252# 1)))) word-regex (fn* [p1__1253#] (regexs (word-group p1__1253#) "[^/,;?]+"))] (CompiledRoute. (re-pattern (apply str (lex path splat "(.*)" #"^//" "https?://" word (fn [w] (let [w (word-regex w)] (str "(" (if (regexp? w) (.-source w) w) ")"))) literal (fn* [p1__1254#] (do (re-escape (.group p1__1254#))))))) (remove nil? (lex path splat :* word word-group literal nil)) (absolute-url? path)))))
+(defn route-compile "Compile a path string using the routes syntax into a uri-matcher struct." ([path] (route-compile path {})) ([path regexs] (let [splat #"\*" word -word-regexp literal -literal-regexp word-group (fn* [p1__1306#] (do (keyword (.group p1__1306# 1)))) word-regex (fn* [p1__1307#] (regexs (word-group p1__1307#) "[^/,;?]+"))] (CompiledRoute. (re-pattern (apply str (lex path splat "(.*)" #"^//" "https?://" word (fn [w] (let [w (word-regex w)] (str "(" (if (regexp? w) (.-source w) w) ")"))) literal (fn* [p1__1308#] (do (re-escape (.group p1__1308#))))))) (remove nil? (lex path splat :* word word-group literal nil)) (absolute-url? path)))))
 (extend-type string Route (route-matches [route request] (route-matches (route-compile route) request)))

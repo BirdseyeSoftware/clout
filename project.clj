@@ -1,4 +1,4 @@
-(defproject clout "1.1.0"
+(defproject clout "1.1.1-SNAPSHOT"
   :description "A HTTP route matching library"
   :url "http://github.com/weavejester/clout"
   :dependencies [[org.clojure/clojure "1.4.0"]
@@ -30,6 +30,13 @@
       :externs ["externs/buster.js"]
       :libraries ["resources/js/clout_dev.js"]
       :output-to "resources/js/clout_browser_test.js"}}
+    {:id  "browser-advanced-test"
+     :source-path "test/cljs"
+     :compiler
+     {:optimizations :advanced
+      :externs ["externs/buster.js"]
+      :libraries ["resources/js/clout_dev.js"]
+      :output-to "resources/js/clout_browser_advanced_test.js"}}
     ;;
     {:id "node-test"
      :source-path "test/cljs"

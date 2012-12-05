@@ -14039,8 +14039,7 @@ goog.Uri.QueryData.prototype.extend = function(a) {
 };
 var clout = {core:{}};
 clout.core.re_matcher = function(a, b) {
-  var c = RegExp(a.source, "g"), d = c.exec(b);
-  return{lookingAt:function() {
+  var c = RegExp(a.source, "g"), d = c.exec(b), e = {lookingAt:function() {
     return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, d.index, 0) : d
   }, matches:function() {
     return cljs.core.truth_(d) ? cljs.core._EQ_.call(null, b, d[0]) : d
@@ -14055,7 +14054,8 @@ clout.core.re_matcher = function(a, b) {
     var a;
     a = cljs.core.truth_(d) ? d.length : d;
     return cljs.core.truth_(a) ? a : 0
-  }, group:function() {
+  }};
+  e.group = function() {
     var a = function(a) {
       a = cljs.core.nth.call(null, a, 0, null);
       return cljs.core.truth_(d) ? (a = cljs.core.truth_(a) ? a : 0, d[a]) : d
@@ -14071,7 +14071,8 @@ clout.core.re_matcher = function(a, b) {
     };
     b.cljs$lang$arity$variadic = a;
     return b
-  }()}
+  }();
+  return e
 };
 clout.core.re_chars = cljs.core.set.call(null, "\\.*+|?()[]{}$^");
 clout.core.re_escape = function(a) {
