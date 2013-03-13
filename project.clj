@@ -2,9 +2,9 @@
   :description "A HTTP route matching library"
   :url "http://github.com/weavejester/clout"
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [buster-cljs "0.1.0-SNAPSHOT"]]
+                 [com.birdseye-sw/buster-cljs "0.1.0"]]
   :plugins [[lein-cljsbuild "0.2.9"]
-            [lein-dalap "0.1.0-SNAPSHOT"]]
+            [com.birdseye-sw/lein-dalap "0.1.0"]]
   :hooks [leiningen.dalap]
   :profiles
   {:dev {:dependencies [[org.clojure/tools.namespace "0.2.1"]
