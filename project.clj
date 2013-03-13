@@ -1,15 +1,17 @@
 (defproject clout "1.1.1-SNAPSHOT"
   :description "A HTTP route matching library"
   :url "http://github.com/weavejester/clout"
-  :dependencies [[org.clojure/clojure "1.4.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [com.birdseye-sw/buster-cljs "0.1.0"]]
-  :plugins [[lein-cljsbuild "0.2.9"]
+  :plugins [[lein-cljsbuild "0.3.0"]
             [com.birdseye-sw/lein-dalap "0.1.0"]]
   :hooks [leiningen.dalap]
   :profiles
-  {:dev {:dependencies [[org.clojure/tools.namespace "0.2.1"]
+  {:1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
+   :dev {:dependencies [[org.clojure/tools.namespace "0.2.1"]
                         [ring-mock "0.1.1"]]}}
 
+  :aliases { "all" ["with-profile" "dev:dev,1.4"]}
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
 
