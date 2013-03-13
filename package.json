@@ -1,0 +1,8 @@
+{
+    "name": "clout",
+    "description": "",
+    "version": "1.1.0",
+    "author": "",
+    "dependencies" : { "buster" : "0.6.11" },
+    "scripts": { "test": "buster-test -e node && buster-test -e browser" }
+}
