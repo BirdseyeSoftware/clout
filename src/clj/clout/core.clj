@@ -10,10 +10,6 @@
   (:import java.util.regex.Matcher
            [java.net URLDecoder URLEncoder]))
 
-;; (defn log [& args]
-;;   ^{:cljs '(.log js/console (apply str args))}
-;;   (apply println args))
-
 #_(:cljs
    (defn re-matcher [re s]
      (let [re (js* "new RegExp(re.source, 'g')")
@@ -49,11 +45,6 @@
                (and match
                     (aget match (or i 0)))))
        matcher)))
-
-;; ^:clj
-;; (defn re-matcher [re s]
-;;   (log "* " re " " s)
-;;   (clojure.core/re-matcher re s))
 
 ;; Regular expression utilties
 
@@ -218,7 +209,7 @@
             literal nil))
         (absolute-url? path)))))
 
-(extend-type String
+(extend-type java.lang.String
   Route
   (route-matches [route request]
     (route-matches (route-compile route) request)))
