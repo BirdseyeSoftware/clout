@@ -1,4 +1,4 @@
-Clout
+Clout [![Build Status](https://travis-ci.org/BirdseyeSoftware/clout.png?branch=cljs)](https://travis-ci.org/BirdseyeSoftware/clout)
 =====
 
 Clout is a library for matching [Ring][1] HTTP requests. It uses the same
