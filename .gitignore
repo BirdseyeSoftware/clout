@@ -4,3 +4,6 @@ clout*.jar
 pom.xml
 .lein-failures
 .lein-*
+node_modules/
+target/
+resources/js/clout_*.js
